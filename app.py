@@ -43,7 +43,7 @@ def daily_announcement():
     push_message("coastd54703", "📢 每日公告：今天無特別事項，祝您愉快！")
 
 # 每天早上 8 點推播公告
-schedule.every().day.at("17:45").do(daily_announcement)
+schedule.every().day.at("17:49").do(daily_announcement)
 
 while True:
     schedule.run_pending()
