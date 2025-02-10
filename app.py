@@ -1,76 +1,98 @@
-# import requests
-# from flask import Flask, request, jsonify
+# -*- coding: utf-8 -*-
 
-# app = Flask(__name__)
+#  Licensed under the Apache License, Version 2.0 (the "License"); you may
+#  not use this file except in compliance with the License. You may obtain
+#  a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#  License for the specific language governing permissions and limitations
+#  under the License.
 
-# LINE_ACCESS_TOKEN = 'lfY2dViQPmDXseT99CHpfZQ1qLVsPli5Wql22wVCr4Bo6/czqau0Cr0PewiYsCbpvOh2JkzHiTnwwaRil0G2moIVOR6OaCZfFGgcjuOFM1PyS9vo0Jcd65ud5184NNp9u95C78oLcLiD80qoic1XogdB04t89/1O/w1cDnyilFU='
 
-# def push_message(user_id, message):
-    # url = "https://api.line.me/v2/bot/message/push"
-    # headers = {
-        # "Authorization": f"Bearer {LINE_ACCESS_TOKEN}",
-        # "Content-Type": "application/json"
-    # }
-    # data = {
-        # "to": user_id,
-        # "messages": [{"type": "text", "text": message}]
-    # }
-    # response = requests.post(url, headers=headers, json=data)
-    # return response.status_code
+import os
+import sys
+from argparse import ArgumentParser
 
-# @app.route("/callback", methods=["POST"])
-# def callback():
-    # body = request.get_json()
-    # for event in body['events']:
-        # if event['type'] == 'message' and event['message']['type'] == 'text':
-            # user_id = event['source']['userId']
-            # user_message = event['message']['text']
-            # if user_message == "公告":
-                # push_message(user_id, "📢 社區公告：今晚 10 點停水，請提前儲水！")
-            # else:
-                # push_message(user_id, "⚠️ 無法識別的指令，請輸入「公告」。")
-    # return jsonify({"status": "ok"})
-
-# if __name__ == "__main__":
-    # app.run(port=5000)
-    
-    
-from flask import Flask, request, jsonify
-import requests
+from flask import Flask, request, abort
+from linebot import (
+    WebhookParser
+)
+from linebot.v3.exceptions import (
+    InvalidSignatureError
+)
+from linebot.v3.webhooks import (
+    MessageEvent,
+    TextMessageContent,
+)
+from linebot.v3.messaging import (
+    Configuration,
+    ApiClient,
+    MessagingApi,
+    ReplyMessageRequest,
+    TextMessage
+)
 
 app = Flask(__name__)
 
-LINE_ACCESS_TOKEN = 'lfY2dViQPmDXseT99CHpfZQ1qLVsPli5Wql22wVCr4Bo6/czqau0Cr0PewiYsCbpvOh2JkzHiTnwwaRil0G2moIVOR6OaCZfFGgcjuOFM1PyS9vo0Jcd65ud5184NNp9u95C78oLcLiD80qoic1XogdB04t89/1O/w1cDnyilFU='
+# get channel_secret and channel_access_token from your environment variable
+channel_secret = os.getenv('LINE_CHANNEL_SECRET', None)
+channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None)
+if channel_secret is None:
+    print('Specify LINE_CHANNEL_SECRET as environment variable.')
+    sys.exit(1)
+if channel_access_token is None:
+    print('Specify LINE_CHANNEL_ACCESS_TOKEN as environment variable.')
+    sys.exit(1)
 
-def reply_message(reply_token, message):
-    """回應用戶訊息"""
-    url = "https://api.line.me/v2/bot/message/reply"
-    headers = {
-        "Authorization": f"Bearer {LINE_ACCESS_TOKEN}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "replyToken": reply_token,
-        "messages": [{"type": "text", "text": message}]
-    }
-    requests.post(url, headers=headers, json=data)
+parser = WebhookParser(channel_secret)
 
-@app.route("/callback", methods=["POST"])
+configuration = Configuration(
+    access_token=channel_access_token
+)
+
+
+@app.route("/callback", methods=['POST'])
 def callback():
-    """接收 LINE Webhook 事件"""
-    body = request.get_json()
-    # print(body)  # 調試時可用，確認收到的訊息格式
+    signature = request.headers['X-Line-Signature']
 
-    for event in body['events']:
-        if event['type'] == 'message' and event['message']['type'] == 'text':
-            reply_token = event['replyToken']
-            user_message = event['message']['text']
-            if user_message == "公告":
-                reply_message(reply_token, "📢 社區公告：今晚 10 點停水，請提前儲水！")
-            else:
-                reply_message(reply_token, "⚠️ 指令未識別，請輸入「公告」查看最新資訊。")
-    
-    return jsonify({"status": "ok"})
+    # get request body as text
+    body = request.get_data(as_text=True)
+    app.logger.info("Request body: " + body)
+
+    # parse webhook body
+    try:
+        events = parser.parse(body, signature)
+    except InvalidSignatureError:
+        abort(400)
+
+    # if event is MessageEvent and message is TextMessage, then echo text
+    for event in events:
+        if not isinstance(event, MessageEvent):
+            continue
+        if not isinstance(event.message, TextMessageContent):
+            continue
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            line_bot_api.reply_message_with_http_info(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[TextMessage(text=event.message.text)]
+                )
+            )
+
+    return 'OK'
+
 
 if __name__ == "__main__":
-    app.run(port=5000)
+    arg_parser = ArgumentParser(
+        usage='Usage: python ' + __file__ + ' [--port <port>] [--help]'
+    )
+    arg_parser.add_argument('-p', '--port', type=int, default=8000, help='port')
+    arg_parser.add_argument('-d', '--debug', default=False, help='debug')
+    options = arg_parser.parse_args()
+
+    app.run(debug=options.debug, port=options.port)
