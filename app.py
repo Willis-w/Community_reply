@@ -39,7 +39,7 @@ import schedule
 import time
 
 def daily_announcement():
-    user_id = "目標用戶的 LINE ID"
+    LINE_ACCESS_TOKEN = 'lfY2dViQPmDXseT99CHpfZQ1qLVsPli5Wql22wVCr4Bo6/czqau0Cr0PewiYsCbpvOh2JkzHiTnwwaRil0G2moIVOR6OaCZfFGgcjuOFM1PyS9vo0Jcd65ud5184NNp9u95C78oLcLiD80qoic1XogdB04t89/1O/w1cDnyilFU='
     push_message(user_id, "📢 每日公告：今天無特別事項，祝您愉快！")
 
 # 每天早上 8 點推播公告
