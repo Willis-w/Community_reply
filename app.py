@@ -66,11 +66,34 @@ def callback():
             reply_token = event['replyToken']
             user_message = event['message']['text']
             if user_message == "公告":
-                reply_message(reply_token, "📢 社區公告：今晚 10 點停水，請提前儲水！")
+                # reply_message(reply_token, "📢 社區公告：今晚 10 點停水，請提前儲水！")
+                push_message()
             else:
-                reply_message(reply_token, "⚠️ 指令未識別，請輸入「公告」查看最新資訊。")
+                # reply_message(reply_token, "⚠️ 指令未識別，請輸入「公告」查看最新資訊。")
+                push_message()
     
     return jsonify({"status": "ok"})
+
+
+def push_message():
+    """每日推播訊息到 LINE 用戶"""
+    url = "https://api.line.me/v2/bot/message/broadcast"
+    headers = {
+        "Authorization": f"Bearer {LINE_ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "messages": [
+            {"type": "text", "text": "📢 每日提醒：今天是個美好的一天！記得多喝水 💧，保持健康！"}
+        ]
+    }
+    response = requests.post(url, headers=headers, json=data)
+    
+    if response.status_code == 200:
+        print("訊息推播成功")
+    else:
+        print(f"推播失敗，狀態碼：{response.status_code}, 回應：{response.text}")
+
 
 if __name__ == "__main__":
     app.run(port=5000)
