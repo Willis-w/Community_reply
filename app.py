@@ -65,10 +65,10 @@ def callback():
         if event['type'] == 'message' and event['message']['type'] == 'text':
             reply_token = event['replyToken']
             user_message = event['message']['text']
-            if "垃圾場" in user_message and "開放" in user_message:
+            if "垃圾場" in user_message and "開放" in user_message and "123456" in user_message:
                 msg= "📢📢📢 社區通知：垃圾場開放！🗑✅✅✅✅✅✅✅✅"
                 push_message(msg)
-            elif "垃圾場" in user_message and "關閉" in user_message:
+            elif "垃圾場" in user_message and "關閉" in user_message and "123456" in user_message:
                 msg= "📢📢📢 社區通知：垃圾已滿!💣垃圾場關閉！🗑️⛔⛔️⛔⛔⛔⛔⛔⛔"
                 push_message(msg)
             else:
@@ -90,7 +90,7 @@ def push_message(msg):
     data = {
         "to": GROUP_ID,
         "messages": [
-            {"type": "text", "text": "📢 每日提醒：記得今天晚上社區停電，請提前準備！"}
+            {"type": "text", "text": msg}
         ]
     }
     response = requests.post(url, headers=headers, json=data)
