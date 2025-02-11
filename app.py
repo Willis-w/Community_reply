@@ -76,15 +76,17 @@ def callback():
 
 
 def push_message():
-    """每日推播訊息到 LINE 用戶"""
-    url = "https://api.line.me/v2/bot/message/broadcast"
+    """推播訊息到特定群組"""
+    url = "https://api.line.me/v2/bot/message/push"
+    GROUP_ID = "C40d5aaabf36deeddd9ec70c89ac4c91f"
     headers = {
         "Authorization": f"Bearer {LINE_ACCESS_TOKEN}",
         "Content-Type": "application/json"
     }
     data = {
+        "to": GROUP_ID,
         "messages": [
-            {"type": "text", "text": "📢 每日提醒：今天是個美好的一天！記得多喝水 💧，保持健康！"}
+            {"type": "text", "text": "📢 每日提醒：記得今天晚上社區停電，請提前準備！"}
         ]
     }
     response = requests.post(url, headers=headers, json=data)
