@@ -60,22 +60,26 @@ def callback():
     """接收 LINE Webhook 事件"""
     body = request.get_json()
     print(body)  # 調試時可用，確認收到的訊息格式
-
+    msg=""
     for event in body['events']:
         if event['type'] == 'message' and event['message']['type'] == 'text':
             reply_token = event['replyToken']
             user_message = event['message']['text']
-            if user_message == "公告":
-                # reply_message(reply_token, "📢 社區公告：今晚 10 點停水，請提前儲水！")
-                push_message()
+            if "垃圾場" in user_message and "開放" in user_message:
+                msg= "📢📢📢 社區通知：垃圾場開放！🗑✅✅✅✅✅✅✅✅"
+                push_message(msg)
+            elif "垃圾場" in user_message and "關閉" in user_message:
+                msg= "📢📢📢 社區通知：垃圾已滿!💣垃圾場關閉！🗑️⛔⛔️⛔⛔⛔⛔⛔⛔"
+                push_message(msg)
             else:
                 # reply_message(reply_token, "⚠️ 指令未識別，請輸入「公告」查看最新資訊。")
-                push_message()
+                # push_message(msg)
+                pass
     
     return jsonify({"status": "ok"})
 
 
-def push_message():
+def push_message(msg):
     """推播訊息到特定群組"""
     url = "https://api.line.me/v2/bot/message/push"
     GROUP_ID = "C40d5aaabf36deeddd9ec70c89ac4c91f"
